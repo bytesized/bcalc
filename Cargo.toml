@@ -1,0 +1,12 @@
+[package]
+name = "bcalc"
+version = "0.1.0"
+edition = "2021"
+description = "A basic command line calculator. See the readme for a description of features:\nhttps://github.com/bytesized/bcalc/blob/main/README.md"
+repository = "https://github.com/bytesized/utilities"
+
+[dependencies]
+clap = { version = "4.0.29", features = ["derive"] }
+crossterm = "0.25.0"
+num = "0.4.0"
+rusqlite = { version = "0.28.0", features = ["bundled"] }
