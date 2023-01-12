@@ -478,7 +478,6 @@ impl SyntaxTree {
             }
         }
         mem::swap(&mut temp, &mut ooos);
-        // `ooos` is now in reverse order, but we actually want to start the loop below that way.
 
         // At this point, if the input was syntactically correct, `ooos` ought to be a vector of
         // alternating operands and operators starting and ending with an operand. We will go
