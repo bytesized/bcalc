@@ -11,7 +11,7 @@ Note that this approach can't really be used for irrational numbers. This isn't 
 
 ### Input History
 
-Supports history backscroll via up and down arrow keys
+Supports history backscroll via up and down arrow keys.
 
 ### Variables
 
@@ -35,6 +35,13 @@ bcalc has support for several commands which are invoked by beginning the calcul
 /help
 /help help
 ```
+
+### Hotkeys
+
+bcalc supports several navigation hotkeys:
+
+ - Larger movement distance with arrow keys by additionally using Control
+ - Control+M when the cursor is over a parenthesis to jump to the matching one.
 
 ## TODO
 
