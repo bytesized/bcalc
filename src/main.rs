@@ -204,7 +204,7 @@ fn interactive_calc(
                     } else {
                         // MoveToNextLine doesn't seem to always work properly if we aren't in the
                         // alternate screen.
-                        queue!(stdout, Print("\n"))?;
+                        queue!(stdout, Print("\n"), MoveToColumn(0))?;
                     }
                 } else {
                     queue!(stdout, MoveTo(cursor_col, cursor_row))?;
