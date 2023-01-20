@@ -44,7 +44,7 @@ const LARGE_CURSOR_MOVE_DISTANCE: usize = 15;
 pub struct Args {
     /// Radix (base) to use for input and output.
     #[arg(short, long, default_value_t = 10)]
-    #[arg(value_parser = clap::value_parser!(u8).range(1..17))]
+    #[arg(value_parser = clap::value_parser!(u8).range(2..=16))]
     radix: u8,
 
     /// If specified, input will be read from the provided string rather than interactively.
