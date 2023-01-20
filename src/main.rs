@@ -204,7 +204,7 @@ fn interactive_calc(
                     } else {
                         // MoveToNextLine doesn't seem to always work properly if we aren't in the
                         // alternate screen.
-                        queue!(stdout, Print("\n"))?;
+                        queue!(stdout, Print("\n"), MoveToColumn(0))?;
                     }
                     queue!(
                         stdout,
@@ -484,13 +484,17 @@ fn interactive_calc(
             Err(CalculatorFailure::RuntimeError(e)) => format!("Runtime Error: {}", e),
         };
 
-        queue!(stdout, Print(output))?;
-        if args.alternate_screen {
-            queue!(stdout, MoveToNextLine(1))?;
-        } else {
-            // MoveToNextLine doesn't seem to always work properly if we aren't in the
-            // alternate screen.
-            queue!(stdout, Print("\n"))?;
+        // It appears that on macOS, outputting a newline advances the cursor down, but not back to
+        // column 0. So we need to make sure that we do that manually.
+        for line in output.split('\n') {
+            queue!(stdout, Print(line))?;
+            if args.alternate_screen {
+                queue!(stdout, MoveToNextLine(1))?;
+            } else {
+                // MoveToNextLine doesn't seem to always work properly if we aren't in the
+                // alternate screen.
+                queue!(stdout, Print("\n"), MoveToColumn(0))?;
+            }
         }
         stdout.flush()?;
     } // 'calculate: loop
