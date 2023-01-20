@@ -49,6 +49,3 @@ This project is still a work in progress. A number of features are planned or do
 
  - Exponentiation
  - The square root operator `sqrt`
- - Radix conversion
- - Displaying commas in numeric output
- - Displaying ratios as decimals rather than ratios

@@ -1,6 +1,7 @@
 mod commands;
 mod error;
 mod input_history;
+mod operations;
 mod position;
 mod saved_data;
 mod syntax_tree;
@@ -22,6 +23,7 @@ use crossterm::{
 };
 use error::{CalculatorEnvironmentError, CalculatorFailure, InternalCalculatorError};
 use input_history::InputHistory;
+use operations::make_decimal_string;
 use saved_data::SavedData;
 use std::{
     cmp::{max, min},
@@ -60,18 +62,31 @@ pub struct Args {
     /// database. If this option is specified, the database will not be used.
     #[arg(long)]
     no_db: bool,
-    // TODO: Implement
-    // If specified, the output radix (base) will be set to this rather than being the same as the
-    // input radix.
-    // #[arg(long)]
-    // #[arg(value_parser = clap::value_parser!(u8).range(1..17))]
-    // convert_to_radix: Option<u8>,
 
-    // TODO: Implement
-    // If specified, the output will use commas as thousands separators to make long numbers more
-    // readable.
-    // #[arg(short, long)]
-    // commas: bool,
+    /// If specified, the output radix (base) will be set to this rather than being the same as the
+    /// input radix.
+    #[arg(long)]
+    #[arg(value_parser = clap::value_parser!(u8).range(1..17))]
+    convert_to_radix: Option<u8>,
+
+    /// Maximum number of decimal digits to output.
+    #[arg(short, long, default_value_t = 5)]
+    precision: u8,
+
+    /// If specified, an alternate terminal screen is opened rather than doing the calculations
+    /// inline. In this mode, entered calculations wrap rather than scrolling.
+    #[arg(short, long)]
+    fractional: bool,
+
+    /// If specified, the output will use commas as thousands separators to make long numbers more
+    /// readable.
+    #[arg(short, long)]
+    commas: bool,
+
+    /// If specified and the output radix is above 10, digits above 9 will be displayed in upper
+    /// case.
+    #[arg(short, long)]
+    upper: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -543,6 +558,19 @@ fn calculate(
     let st = SyntaxTree::new(tokens.into())?;
     let result = st.execute(maybe_input_history_id, maybe_vars, maybe_db)?;
 
-    // TODO: Allow displaying decimals better
-    Ok(result.to_string())
+    if args.fractional {
+        Ok(result.to_string())
+    } else {
+        let output_radix = match args.convert_to_radix {
+            Some(radix) => radix,
+            None => args.radix,
+        };
+        Ok(make_decimal_string(
+            &result,
+            output_radix,
+            args.precision,
+            args.commas,
+            args.upper,
+        ))
+    }
 }
