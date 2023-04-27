@@ -311,6 +311,15 @@ impl OperandOrOperator {
         }
     }
 
+    fn matches_operator_slice(&self, slice: &[BinaryOperatorToken]) -> bool {
+        match self {
+            OperandOrOperator::Operator(Positioned { value, position: _ }) if slice.contains(value) => {
+                true
+            }
+            _ => false,
+        }
+    }
+
     fn unwrap_operator(self) -> Positioned<BinaryOperatorToken> {
         match self {
             OperandOrOperator::Operator(o) => o,
@@ -492,7 +501,7 @@ impl SyntaxTree {
                 };
                 if ooo.is_operand()
                     && ooos.len() >= 2
-                    && ooos[0].matches_operator(*ordered_operator)
+                    && ooos[0].matches_operator_slice(*ordered_operator)
                     && ooos[1].is_operand()
                 {
                     let operand_1 = ooo.unwrap_operand();

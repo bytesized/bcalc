@@ -34,13 +34,11 @@ pub enum BinaryOperatorToken {
 
 // TODO: Is there some way to check, ideally at compile time, that every variant of
 // `BinaryOperatorToken` is in `ORDERED_BINARY_OPERATORS`?
-pub const ORDERED_BINARY_OPERATORS: &'static [BinaryOperatorToken] = &[
-    BinaryOperatorToken::Exponent,
-    BinaryOperatorToken::Modulus,
-    BinaryOperatorToken::Multiply,
-    BinaryOperatorToken::Divide,
-    BinaryOperatorToken::Add,
-    BinaryOperatorToken::Subtract,
+pub const ORDERED_BINARY_OPERATORS: &'static [&'static [BinaryOperatorToken]] = &[
+    &[BinaryOperatorToken::Exponent],
+    &[BinaryOperatorToken::Modulus],
+    &[BinaryOperatorToken::Multiply, BinaryOperatorToken::Divide],
+    &[BinaryOperatorToken::Add, BinaryOperatorToken::Subtract],
 ];
 
 impl fmt::Display for BinaryOperatorToken {
