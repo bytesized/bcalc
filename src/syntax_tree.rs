@@ -18,7 +18,7 @@ use crate::{
     },
     variable::{Variable, VariableStore},
 };
-use num::{bigint::BigInt, rational::BigRational, Signed};
+use num::{bigint::BigInt, pow::Pow, rational::BigRational, Signed};
 use std::{
     cmp::{max, min},
     collections::VecDeque,
@@ -145,6 +145,9 @@ impl OperationNode for BinaryNode {
             }
             BinaryOperatorToken::Modulus => Ok(operand_1 % operand_2),
             BinaryOperatorToken::Exponent => {
+                if operand_2.is_integer() {
+                    return Ok(Pow::pow(operand_1, operand_2.numer()));
+                }
                 // TODO: Implement
                 return Err(Positioned::new(Unimplemented, self.operator_position).into());
             }
