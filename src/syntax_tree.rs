@@ -981,13 +981,13 @@ mod syntax_tree_tests {
     fn mixed_operator_chain() {
         let st = str_to_syntax_tree("1+2+3-4*5/6+7^8%9").unwrap();
         assert!(st.maybe_result_var.is_none());
-        let (operand_1_3, operand_4_9) = assert_binary_operator(st.root, Subtract, 5, 1, 0, 17);
+        let (operand_1_6, operand_7_9) = assert_binary_operator(st.root, Add, 11, 1, 0, 17);
+        let (operand_1_3, operand_4_6) = assert_binary_operator(operand_1_6, Subtract, 5, 1, 0, 11);
         let (operand_1_2, operand_3) = assert_binary_operator(operand_1_3, Add, 3, 1, 0, 5);
         assert_int(operand_3, 3, 4, 1);
         let (operand_1, operand_2) = assert_binary_operator(operand_1_2, Add, 1, 1, 0, 3);
         assert_int(operand_1, 1, 0, 1);
         assert_int(operand_2, 2, 2, 1);
-        let (operand_4_6, operand_7_9) = assert_binary_operator(operand_4_9, Add, 11, 1, 6, 11);
         let (operand_4_5, operand_6) = assert_binary_operator(operand_4_6, Divide, 9, 1, 6, 5);
         assert_int(operand_6, 6, 10, 1);
         let (operand_4, operand_5) = assert_binary_operator(operand_4_5, Multiply, 7, 1, 6, 3);
