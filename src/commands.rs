@@ -865,24 +865,25 @@ impl Command for PrecisionCommand {
             let maybe_extra = parsed_args_iter.next();
             let extra: u8 = match &maybe_extra {
                 None => data.args.extra_precision,
-                Some(extra_raw) => {
-                    extra_raw.value.try_into().map_err(|_| {
-                        InputError(MaybePositioned::new_positioned(
-                            "Extra must be representable as an 8-bit unsigned integer".to_string(),
-                            extra_raw.position.clone(),
-                        ))
-                    })?
-                },
+                Some(extra_raw) => extra_raw.value.try_into().map_err(|_| {
+                    InputError(MaybePositioned::new_positioned(
+                        "Extra must be representable as an 8-bit unsigned integer".to_string(),
+                        extra_raw.position.clone(),
+                    ))
+                })?,
             };
 
             if precision.checked_add(extra).is_none() {
                 let position = match maybe_extra {
                     None => precision_raw.position,
-                    Some(extra_raw) => Position::from_span(precision_raw.position, extra_raw.position),
+                    Some(extra_raw) => {
+                        Position::from_span(precision_raw.position, extra_raw.position)
+                    }
                 };
                 return Err(InputError(MaybePositioned::new_positioned(
-                    "Sum of precision and extra must be representable as an 8-bit unsigned integer".to_string(),
-                    position
+                    "Sum of precision and extra must be representable as an 8-bit unsigned integer"
+                        .to_string(),
+                    position,
                 )));
             }
 
@@ -903,7 +904,13 @@ impl Command for PrecisionCommand {
                 data.args.extra_precision = extra;
                 Ok(("Done".to_string(), Vec::new()))
             }
-            None => Ok((format!("Precision = {}\nExtra Precision = {}", data.args.precision, data.args.extra_precision), Vec::new())),
+            None => Ok((
+                format!(
+                    "Precision = {}\nExtra Precision = {}",
+                    data.args.precision, data.args.extra_precision
+                ),
+                Vec::new(),
+            )),
         }
     }
 }
