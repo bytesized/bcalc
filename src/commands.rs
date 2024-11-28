@@ -4,7 +4,7 @@ use crate::{
         MissingCapabilityError,
     },
     input_history::InputHistory,
-    position::{MaybePositioned, Positioned},
+    position::{MaybePositioned, Position, Positioned},
     saved_data::{validate_max_history_size, SavedData},
     token::Tokenizer,
     variable::VariableStore,
@@ -829,12 +829,17 @@ impl Command for PrecisionCommand {
 
     fn long_help(&self, _data: &DataForCommands) -> String {
         concat!(
-            "Usage: /precision [value]\n\n",
+            "Usage: /precision [value [extra]]\n\n",
             "The value represents the maximum number of digits that are displayed after the ",
             "decimal point when outputting numbers.\n",
             "If no value is provided, the current setting value is displayed.\n",
             "If a value is given, the setting value is updated.\n",
-            "The value given should be representable as an 8-bit unsigned integer.",
+            "The value given should be representable as an 8-bit unsigned integer.\n",
+            "If extra is given, it should also be representable as an 8-bit unsigned integer.\n",
+            "This will represent the additional precision that is stored internally but not displayed.\n",
+            "This is only really relevant for operations that cannot be done with infinite precision.\n",
+            "For example: sqrt(2)\n",
+            "value + extra must also be representable as an 8-bit unsigned integer."
         )
         .to_string()
     }
@@ -846,17 +851,42 @@ impl Command for PrecisionCommand {
         data: DataForCommands,
     ) -> Result<(String, Vec<String>), CalculatorFailure> {
         let mut parsed_args = data.tokenizer.tokenize_int_list(&arguments.value, 10)?;
-        let input: Option<u8> = if parsed_args.is_empty() {
+        let input: Option<(u8, u8)> = if parsed_args.is_empty() {
             None
-        } else if parsed_args.len() == 1 {
-            let integer = parsed_args.pop().unwrap();
-            let sized_int: u8 = integer.value.try_into().map_err(|_| {
+        } else if parsed_args.len() <= 2 {
+            let mut parsed_args_iter = parsed_args.into_iter();
+            let precision_raw = parsed_args_iter.next().unwrap();
+            let precision: u8 = precision_raw.value.try_into().map_err(|_| {
                 InputError(MaybePositioned::new_positioned(
-                    "Value must be representable as an 8-bit unsigned integer".to_string(),
-                    integer.position,
+                    "Precision must be representable as an 8-bit unsigned integer".to_string(),
+                    precision_raw.position.clone(),
                 ))
             })?;
-            Some(sized_int)
+            let maybe_extra = parsed_args_iter.next();
+            let extra: u8 = match &maybe_extra {
+                None => data.args.extra_precision,
+                Some(extra_raw) => {
+                    extra_raw.value.try_into().map_err(|_| {
+                        InputError(MaybePositioned::new_positioned(
+                            "Extra must be representable as an 8-bit unsigned integer".to_string(),
+                            extra_raw.position.clone(),
+                        ))
+                    })?
+                },
+            };
+
+            if precision.checked_add(extra).is_none() {
+                let position = match maybe_extra {
+                    None => precision_raw.position,
+                    Some(extra_raw) => Position::from_span(precision_raw.position, extra_raw.position),
+                };
+                return Err(InputError(MaybePositioned::new_positioned(
+                    "Sum of precision and extra must be representable as an 8-bit unsigned integer".to_string(),
+                    position
+                )));
+            }
+
+            Some((precision, extra))
         } else {
             let last_arg = parsed_args.pop().unwrap();
             let first_arg = parsed_args.into_iter().next().unwrap();
@@ -868,11 +898,12 @@ impl Command for PrecisionCommand {
         };
 
         match input {
-            Some(value) => {
-                data.args.precision = value;
+            Some((precision, extra)) => {
+                data.args.precision = precision;
+                data.args.extra_precision = extra;
                 Ok(("Done".to_string(), Vec::new()))
             }
-            None => Ok((format!("{}", data.args.precision), Vec::new())),
+            None => Ok((format!("Precision = {}\nExtra Precision = {}", data.args.precision, data.args.extra_precision), Vec::new())),
         }
     }
 }

@@ -73,6 +73,10 @@ pub struct Args {
     #[arg(short, long, default_value_t = 5)]
     precision: u8,
 
+    /// Additional decimal digits to store internally.
+    #[arg(long, default_value_t = 10)]
+    extra_precision: u8,
+
     /// If specified, an alternate terminal screen is opened rather than doing the calculations
     /// inline. In this mode, entered calculations wrap rather than scrolling.
     #[arg(short, long)]
