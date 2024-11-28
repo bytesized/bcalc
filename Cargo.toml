@@ -8,5 +8,5 @@ repository = "https://github.com/bytesized/utilities"
 [dependencies]
 clap = { version = "4.0.29", features = ["derive"] }
 crossterm = "0.25.0"
-num = "0.4.0"
+num = "0.4.2"
 rusqlite = { version = "0.28.0", features = ["bundled"] }

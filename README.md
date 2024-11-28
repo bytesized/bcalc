@@ -7,7 +7,7 @@ A command line calculator
 
 In addition to allowing numbers to be arbitrarily large, bcalc stores non-integers via ratios rather than as floating point binary numbers. This means that precision isn't lost when binary floating point representations can't accurately represent a value. See [this Wikipedia article](https://en.wikipedia.org/wiki/Binary_number#Fractions) for more information on this problem.
 
-Note that this approach can't really be used for irrational numbers. This isn't a problem for currently implemented features, but planned future features will be able to result in irrational numbers such as the square root of 2. The current plan is to use some sort of approximation in the case of irrational numbers. 
+Note that this approach can't really be used for irrational numbers. Operations that result in irrational numbers such as `sqrt 2` will use the configurable precision values to determine how many digits of precision to calculate. See `/help precision` for more details.
 
 ### Input History
 
@@ -25,7 +25,7 @@ Variables can then be used in the place of numbers in later expressions.
 
 ### Multisession support
 
-bcalc can remember the input and variable history from previous sessions. This feature currently won't work properly, however, unless the environment is set up properly. This set up is performed automatically when via the installer for my [utilities](https://github.com/bytesized/utilities).
+bcalc can remember the input and variable history from previous sessions. This feature currently won't work properly, however, unless the environment is set up properly. This set up is performed automatically when installed via [my utilities](https://github.com/bytesized/utilities) installer.
 
 ### Commands
 
@@ -35,6 +35,10 @@ bcalc has support for several commands which are invoked by beginning the calcul
 /help
 /help help
 ```
+
+### Consistent exit key
+
+Control+D exits on all operating system including when using `-a`.
 
 ### Hotkeys
 
@@ -47,5 +51,11 @@ bcalc supports several navigation hotkeys:
 
 This project is still a work in progress. A number of features are planned or do not yet work properly:
 
- - Fractional exponents
- - The square root operator `sqrt`
+ - Fix navigation hotkeys. They don't seem to be working right, at least on macOS.
+ - Allow argument configuration values to be saved.
+ - Enable more detailed errors that point at the location of the error in the input.
+ - Add a `/quit` command.
+ - Add logarithm support.
+ - Add common constants such as pi.
+ - Add trigonometric functions.
+ - Support for imaginary numbers.

@@ -1,9 +1,7 @@
 use crate::{
     error::{
         CalculatorFailure,
-        MathExecutionError::{
-            DivisionByZero, FunctionNeedsArguments, Unimplemented, UnknownVariable,
-        },
+        MathExecutionError::{DivisionByZero, FunctionNeedsArguments, UnknownVariable},
         MissingCapabilityError::NoVariableStore,
         SyntaxError::{
             self, CommaWithoutOperandAfter, CommaWithoutOperandBefore, EmptyParens,
@@ -11,14 +9,20 @@ use crate::{
             MissingOperand, MissingOperator, NoInput, UnexpectedToken,
         },
     },
+    operations::exponentiate,
     position::{Position, Positioned},
     saved_data::SavedData,
     token::{
         BinaryOperatorToken, FunctionNameToken, Token, UnaryOperatorToken, ORDERED_BINARY_OPERATORS,
     },
     variable::{Variable, VariableStore},
+    Args,
 };
-use num::{bigint::BigInt, pow::Pow, rational::BigRational, Signed};
+use num::{
+    bigint::{BigInt, ToBigInt},
+    rational::BigRational,
+    Signed,
+};
 use std::{
     cmp::{max, min},
     collections::VecDeque,
@@ -30,6 +34,7 @@ trait OperationNode {
         self: Box<Self>,
         maybe_vars: Option<&mut VariableStore>,
         maybe_db: Option<&mut SavedData>,
+        args: &Args,
     ) -> Result<BigRational, CalculatorFailure>;
 
     fn position(&self) -> Position;
@@ -46,6 +51,7 @@ impl OperationNode for NumericNode {
         self: Box<Self>,
         _maybe_vars: Option<&mut VariableStore>,
         _maybe_db: Option<&mut SavedData>,
+        _args: &Args,
     ) -> Result<BigRational, CalculatorFailure> {
         Ok(self.value)
     }
@@ -66,6 +72,7 @@ impl OperationNode for VariableNode {
         self: Box<Self>,
         maybe_vars: Option<&mut VariableStore>,
         maybe_db: Option<&mut SavedData>,
+        _args: &Args,
     ) -> Result<BigRational, CalculatorFailure> {
         let vars = match maybe_vars {
             Some(v) => v,
@@ -94,14 +101,20 @@ impl OperationNode for UnaryNode {
         self: Box<Self>,
         mut maybe_vars: Option<&mut VariableStore>,
         mut maybe_db: Option<&mut SavedData>,
+        args: &Args,
     ) -> Result<BigRational, CalculatorFailure> {
-        let operand = self
-            .operand
-            .execute(maybe_vars.as_deref_mut(), maybe_db.as_deref_mut())?;
+        let operand =
+            self.operand
+                .execute(maybe_vars.as_deref_mut(), maybe_db.as_deref_mut(), args)?;
         match self.operator {
             UnaryOperatorToken::SquareRoot => {
-                // TODO: Implement
-                return Err(Positioned::new(Unimplemented, self.operator_position).into());
+                let total_precision = args.precision + args.extra_precision;
+                let one_half = BigRational::new(
+                    ToBigInt::to_bigint(&1).unwrap(),
+                    ToBigInt::to_bigint(&2).unwrap(),
+                );
+                exponentiate(operand, one_half, total_precision, args.radix)
+                    .map_err(|e| Positioned::new(e, self.operator_position.clone()).into())
             }
             UnaryOperatorToken::Negate => Ok(-operand),
             UnaryOperatorToken::AbsoluteValue => Ok(operand.abs()),
@@ -126,13 +139,14 @@ impl OperationNode for BinaryNode {
         self: Box<Self>,
         mut maybe_vars: Option<&mut VariableStore>,
         mut maybe_db: Option<&mut SavedData>,
+        args: &Args,
     ) -> Result<BigRational, CalculatorFailure> {
-        let operand_1 = self
-            .operand_1
-            .execute(maybe_vars.as_deref_mut(), maybe_db.as_deref_mut())?;
-        let operand_2 = self
-            .operand_2
-            .execute(maybe_vars.as_deref_mut(), maybe_db.as_deref_mut())?;
+        let operand_1 =
+            self.operand_1
+                .execute(maybe_vars.as_deref_mut(), maybe_db.as_deref_mut(), args)?;
+        let operand_2 =
+            self.operand_2
+                .execute(maybe_vars.as_deref_mut(), maybe_db.as_deref_mut(), args)?;
         match self.operator {
             BinaryOperatorToken::Add => Ok(operand_1 + operand_2),
             BinaryOperatorToken::Subtract => Ok(operand_1 - operand_2),
@@ -145,11 +159,9 @@ impl OperationNode for BinaryNode {
             }
             BinaryOperatorToken::Modulus => Ok(operand_1 % operand_2),
             BinaryOperatorToken::Exponent => {
-                if operand_2.is_integer() {
-                    return Ok(Pow::pow(operand_1, operand_2.numer()));
-                }
-                // TODO: Implement
-                return Err(Positioned::new(Unimplemented, self.operator_position).into());
+                let total_precision = args.precision + args.extra_precision;
+                exponentiate(operand_1, operand_2, total_precision, args.radix)
+                    .map_err(|e| Positioned::new(e, self.operator_position.clone()).into())
             }
         }
     }
@@ -175,10 +187,15 @@ impl OperationNode for FunctionNode {
         self: Box<Self>,
         mut maybe_vars: Option<&mut VariableStore>,
         mut maybe_db: Option<&mut SavedData>,
+        args: &Args,
     ) -> Result<BigRational, CalculatorFailure> {
         let mut operands: Vec<BigRational> = Vec::new();
         for operand in self.operands {
-            operands.push(operand.execute(maybe_vars.as_deref_mut(), maybe_db.as_deref_mut())?);
+            operands.push(operand.execute(
+                maybe_vars.as_deref_mut(),
+                maybe_db.as_deref_mut(),
+                args,
+            )?);
         }
         match self.function_name {
             FunctionNameToken::Max => {
@@ -232,8 +249,9 @@ impl OperationNode for ParenthesizedNode {
         self: Box<Self>,
         maybe_vars: Option<&mut VariableStore>,
         maybe_db: Option<&mut SavedData>,
+        args: &Args,
     ) -> Result<BigRational, CalculatorFailure> {
-        self.node.execute(maybe_vars, maybe_db)
+        self.node.execute(maybe_vars, maybe_db, args)
     }
 
     fn position(&self) -> Position {
@@ -278,8 +296,10 @@ impl SyntaxTreeNode {
         self,
         maybe_vars: Option<&mut VariableStore>,
         maybe_db: Option<&mut SavedData>,
+        args: &Args,
     ) -> Result<BigRational, CalculatorFailure> {
-        self.into_operation_node().execute(maybe_vars, maybe_db)
+        self.into_operation_node()
+            .execute(maybe_vars, maybe_db, args)
     }
 
     fn position(&self) -> Position {
@@ -765,10 +785,11 @@ impl SyntaxTree {
         maybe_input_history_id: Option<i64>,
         mut maybe_vars: Option<&mut VariableStore>,
         mut maybe_db: Option<&mut SavedData>,
+        args: &Args,
     ) -> Result<BigRational, CalculatorFailure> {
         let result = self
             .root
-            .execute(maybe_vars.as_deref_mut(), maybe_db.as_deref_mut())?;
+            .execute(maybe_vars.as_deref_mut(), maybe_db.as_deref_mut(), args)?;
         if let Some(result_var) = self.maybe_result_var {
             let var = Variable {
                 name: result_var.value,

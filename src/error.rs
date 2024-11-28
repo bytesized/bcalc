@@ -170,7 +170,7 @@ pub enum MathExecutionError {
     UnknownVariable(String),
     DivisionByZero,
     FunctionNeedsArguments(FunctionNameToken),
-    Unimplemented,
+    ImaginaryResult,
 }
 
 impl fmt::Display for MathExecutionError {
@@ -181,8 +181,8 @@ impl fmt::Display for MathExecutionError {
             MathExecutionError::FunctionNeedsArguments(function) => {
                 write!(f, "{} has no arguments but requires them", function)
             }
-            MathExecutionError::Unimplemented => {
-                write!(f, "Encountered operation that is not yet supported")
+            MathExecutionError::ImaginaryResult => {
+                write!(f, "Unable to take the root of a negative number except unless the degree is an odd integer")
             }
         }
     }

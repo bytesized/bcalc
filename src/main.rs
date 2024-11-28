@@ -564,7 +564,7 @@ fn calculate(
     }
 
     let st = SyntaxTree::new(tokens.into())?;
-    let result = st.execute(maybe_input_history_id, maybe_vars, maybe_db)?;
+    let result = st.execute(maybe_input_history_id, maybe_vars, maybe_db, args)?;
 
     if args.fractional {
         Ok(result.to_string())
