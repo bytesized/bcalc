@@ -534,7 +534,7 @@ impl Command for RadixCommand {
     }
 
     fn aliases(&self) -> &'static [&'static str] {
-        &[]
+        &["r"]
     }
 
     fn short_help(&self, _data: &DataForCommands) -> String {
@@ -543,7 +543,8 @@ impl Command for RadixCommand {
 
     fn long_help(&self, _data: &DataForCommands) -> String {
         concat!(
-            "Usage: /radix [value]\n\n",
+            "Usage: /radix [value]\n",
+            "Alias: /r\n\n",
             "Value represents the radix used to parse and output numbers.\n",
             "If no value is provided, the current setting value is displayed.\n",
             "If a value is given, the setting value is updated.\n",
@@ -758,7 +759,7 @@ impl Command for CommaCommand {
     }
 
     fn aliases(&self) -> &'static [&'static str] {
-        &[]
+        &["comma"]
     }
 
     fn short_help(&self, _data: &DataForCommands) -> String {
@@ -767,7 +768,8 @@ impl Command for CommaCommand {
 
     fn long_help(&self, _data: &DataForCommands) -> String {
         concat!(
-            "Usage: /commas [enabled]\n\n",
+            "Usage: /commas [enabled]\n",
+            "Alias: /comma\n\n",
             "If the enabled value is \"true\", commas will be used as thousands separators when ",
             "outputting numbers.\n",
             "If no value is provided, the current setting value is displayed.\n",
@@ -829,7 +831,8 @@ impl Command for PrecisionCommand {
 
     fn long_help(&self, _data: &DataForCommands) -> String {
         concat!(
-            "Usage: /precision [value [extra]]\n\n",
+            "Usage: /precision [value [extra]]\n",
+            "Alias: /p\n\n",
             "The value represents the maximum number of digits that are displayed after the ",
             "decimal point when outputting numbers.\n",
             "If no value is provided, the current setting value is displayed.\n",
