@@ -315,7 +315,7 @@ fn interactive_calc(
                                         execute!(stdout, Print("\n"))?;
                                     }
                                     break 'calculate;
-                                } else if c == 'm' {
+                                } else if c == 'm' || c == 'n' {
                                     // "Find matching parenthesis" command.
                                     let current_input = inputs.current_line();
                                     if current_input.len() < 2 {
@@ -411,7 +411,7 @@ fn interactive_calc(
                         KeyCode::Left => {
                             let distance: usize = if event.modifiers.is_empty() {
                                 1
-                            } else if event.modifiers == KeyModifiers::CONTROL {
+                            } else if event.modifiers == KeyModifiers::CONTROL || event.modifiers == KeyModifiers::SHIFT {
                                 LARGE_CURSOR_MOVE_DISTANCE
                             } else {
                                 continue 'get_event;
@@ -426,7 +426,7 @@ fn interactive_calc(
                         KeyCode::Right => {
                             let distance: usize = if event.modifiers.is_empty() {
                                 1
-                            } else if event.modifiers == KeyModifiers::CONTROL {
+                            } else if event.modifiers == KeyModifiers::CONTROL || event.modifiers == KeyModifiers::SHIFT {
                                 LARGE_CURSOR_MOVE_DISTANCE
                             } else {
                                 continue 'get_event;

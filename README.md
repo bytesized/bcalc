@@ -44,14 +44,13 @@ Control+D exits on all operating system including when using `-a`.
 
 bcalc supports several navigation hotkeys:
 
- - Larger movement distance with arrow keys by additionally using Control
- - Control+M when the cursor is over a parenthesis to jump to the matching one.
+ - Larger movement distance with arrow keys by additionally using Control or Shift.
+ - Control+N when the cursor is over a parenthesis to jump to the matching one.
 
 ## TODO
 
 This project is still a work in progress. A number of features are planned or do not yet work properly:
 
- - Fix navigation hotkeys. They don't seem to be working right, at least on macOS.
  - Allow argument configuration values to be saved.
  - Enable more detailed errors that point at the location of the error in the input.
  - Add a `/quit` command.
