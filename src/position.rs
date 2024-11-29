@@ -151,6 +151,8 @@ where
     T: Clone + fmt::Debug,
 {
     pub value: T,
+    // TODO: Use this and remove the lint override.
+    #[allow(dead_code)]
     pub maybe_position: Option<Position>,
 }
 

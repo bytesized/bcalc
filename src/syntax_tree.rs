@@ -396,6 +396,10 @@ impl From<ExpressionEnd> for InputReadResult {
 #[derive(Clone, Debug)]
 enum OperandReadResult {
     Operand(SyntaxTreeNode),
+    // TODO: Maybe remove this linter override at some point? We currently never actually care
+    //       exactly what token caused the operand parsing to come to an end as long as the parsing
+    //       completed successfully. And we only populate this structure on success.
+    #[allow(dead_code)]
     End(ExpressionEnd),
 }
 
