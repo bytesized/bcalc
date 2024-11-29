@@ -58,3 +58,5 @@ This project is still a work in progress. A number of features are planned or do
  - Add common constants such as pi.
  - Add trigonometric functions.
  - Support for imaginary numbers.
+ - Add a way of cancelling long calculations.
+ - Investigate why `-10^(7/9)` takes so long to evaluate.
