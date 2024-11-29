@@ -411,7 +411,9 @@ fn interactive_calc(
                         KeyCode::Left => {
                             let distance: usize = if event.modifiers.is_empty() {
                                 1
-                            } else if event.modifiers == KeyModifiers::CONTROL || event.modifiers == KeyModifiers::SHIFT {
+                            } else if event.modifiers == KeyModifiers::CONTROL
+                                || event.modifiers == KeyModifiers::SHIFT
+                            {
                                 LARGE_CURSOR_MOVE_DISTANCE
                             } else {
                                 continue 'get_event;
@@ -426,7 +428,9 @@ fn interactive_calc(
                         KeyCode::Right => {
                             let distance: usize = if event.modifiers.is_empty() {
                                 1
-                            } else if event.modifiers == KeyModifiers::CONTROL || event.modifiers == KeyModifiers::SHIFT {
+                            } else if event.modifiers == KeyModifiers::CONTROL
+                                || event.modifiers == KeyModifiers::SHIFT
+                            {
                                 LARGE_CURSOR_MOVE_DISTANCE
                             } else {
                                 continue 'get_event;
