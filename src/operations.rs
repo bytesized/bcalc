@@ -148,53 +148,29 @@ pub fn exponentiate(
             (BigInt::from(0), radicand.to_integer())
         };
 
-        // We are going to unroll a bit to make the loop less confusing.
-        let mut guess: BigInt = (&upper_bound - &lower_bound) / 2 + &lower_bound;
-        let mut error = f_magnitude(&guess);
-        let (mut last_guess_was_lower, mut last_error) = {
-            let next_guess = &guess + 1;
-            let next_error = f_magnitude(&next_guess);
-            if next_error < error {
-                // We want to head towards the upper bound
-                lower_bound = next_guess;
-                (true, next_error)
-            } else {
-                // We want to head towards the lower bound
-                upper_bound = guess;
-                (false, error)
-            }
-        };
-
         let mut span = &upper_bound - &lower_bound;
-        while span > one_signed {
-            guess = span / 2 + &lower_bound;
-            error = f_magnitude(&guess);
-            if last_guess_was_lower == (error < last_error) {
-                // Error is decreasing in the positive direction, we want to head towards the
-                // upper bound.
-                last_guess_was_lower = true;
-                lower_bound = guess;
+        while span > BigInt::ZERO {
+            let lower_guess: BigInt = (&upper_bound - &lower_bound) / 2 + &lower_bound;
+            let upper_guess: BigInt = &lower_guess + 1;
+
+            let lower_guess_error = f_magnitude(&lower_guess);
+            let upper_guess_error = f_magnitude(&upper_guess);
+
+            if lower_guess_error < upper_guess_error {
+                upper_bound = lower_guess;
             } else {
-                // Error is decreasing in the negative direction. We want to head towards the lower
-                // bound.
-                last_guess_was_lower = false;
-                upper_bound = guess;
+                lower_bound = upper_guess;
             }
 
-            last_error = error;
             span = &upper_bound - &lower_bound;
         }
 
-        guess = if span.is_zero() || f_magnitude(&upper_bound) < f_magnitude(&lower_bound) {
-            upper_bound
-        } else {
-            lower_bound
-        };
+        let guess = upper_bound;
 
-        let guess_error = f_magnitude(&guess);
+        let error = f_magnitude(&guess);
         let guess_ratio = BigRational::from(guess);
         // Return early if it's an exact integer.
-        if guess_error.is_zero() {
+        if error.is_zero() {
             return Ok(guess_ratio);
         }
 
@@ -413,6 +389,12 @@ mod operation_tests {
     fn exponentiate_fractional_result_3() {
         let result = evaluate_to_string("-100^(7/3)", 10, 10, 10, false, false);
         assert_eq!(result, "-46415.8883361278".to_string());
+    }
+
+    #[test]
+    fn exponentiate_fractional_result_4() {
+        let result = evaluate_to_string("-10^(7/9)", 10, 10, 10, false, false);
+        assert_eq!(result, "-5.9948425032".to_string());
     }
 
     #[test]
