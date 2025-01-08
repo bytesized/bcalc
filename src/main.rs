@@ -12,7 +12,7 @@ use clap::Parser;
 use commands::CommandExecutor;
 use crossterm::{
     cursor::{self, MoveTo, MoveToColumn, MoveToNextLine},
-    event::{self, Event, KeyCode, KeyModifiers},
+    event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
     execute, queue,
     style::Print,
     terminal::{
@@ -302,163 +302,169 @@ fn interactive_calc(
             // update the display one more time before exiting the `'get_input_line` loop.
             'get_event: loop {
                 match event::read()? {
-                    Event::Key(event) => match event.code {
-                        KeyCode::Char(mut c) => {
-                            if !c.is_ascii() {
-                                continue 'get_event;
-                            }
-                            if event.modifiers == KeyModifiers::CONTROL {
-                                if c == 'd' || c == 'z' || c == 'c' {
-                                    // "Exit" commands.
-                                    if !args.alternate_screen {
-                                        // End this line before moving on.
-                                        execute!(stdout, Print("\n"))?;
-                                    }
-                                    break 'calculate;
-                                } else if c == 'm' || c == 'n' {
-                                    // "Find matching parenthesis" command.
-                                    let current_input = inputs.current_line();
-                                    if current_input.len() < 2 {
-                                        continue 'get_event;
-                                    }
-                                    let mut pos = cursor_pos;
-                                    if pos >= current_input.len() {
-                                        pos = current_input.len() - 1;
-                                    }
-                                    let string_bytes = current_input.as_bytes();
-                                    let (search_left, open_paren, close_paren) =
-                                        match string_bytes[pos] {
-                                            b'(' => (false, b'(', b')'),
-                                            b')' => (true, b')', b'('),
-                                            _ => continue 'get_event,
-                                        };
+                    Event::Key(event) => {
+                        if event.kind == KeyEventKind::Release {
+                            continue 'get_event;
+                        }
+                        match event.code {
+                            KeyCode::Char(mut c) => {
+                                if !c.is_ascii() {
+                                    continue 'get_event;
+                                }
+                                if event.modifiers == KeyModifiers::CONTROL {
+                                    if c == 'd' || c == 'z' || c == 'c' {
+                                        // "Exit" commands.
+                                        if !args.alternate_screen {
+                                            // End this line before moving on.
+                                            execute!(stdout, Print("\n"))?;
+                                        }
+                                        break 'calculate;
+                                    } else if c == 'm' || c == 'n' {
+                                        // "Find matching parenthesis" command.
+                                        let current_input = inputs.current_line();
+                                        if current_input.len() < 2 {
+                                            continue 'get_event;
+                                        }
+                                        let mut pos = cursor_pos;
+                                        if pos >= current_input.len() {
+                                            pos = current_input.len() - 1;
+                                        }
+                                        let string_bytes = current_input.as_bytes();
+                                        let (search_left, open_paren, close_paren) =
+                                            match string_bytes[pos] {
+                                                b'(' => (false, b'(', b')'),
+                                                b')' => (true, b')', b'('),
+                                                _ => continue 'get_event,
+                                            };
 
-                                    // We start `open_count` at `0`, but we also don't advance past
-                                    // the starting parenthesis. So we will always increment it to
-                                    // `1` at the beginning of the first loop. Then we will continue
-                                    // to increment it when we see parentheses matching the one we
-                                    // started on and decrement it when we see the opposite
-                                    // parentheses. Once `open_count` is back down to `0`, we have
-                                    // found the matching parenthesis.
-                                    let mut open_count: usize = 0;
-                                    loop {
-                                        if string_bytes[pos] == open_paren {
-                                            open_count += 1;
-                                        } else if string_bytes[pos] == close_paren {
-                                            open_count -= 1;
-                                        }
-                                        if open_count == 0 {
-                                            cursor_pos = pos;
-                                            break 'get_event;
-                                        }
-                                        // We hit the end of the string and never found the
-                                        // corresponding parenthesis. Just give up and do nothing.
-                                        if search_left && pos == 0 {
-                                            continue 'get_event;
-                                        } else if !search_left && pos + 1 >= string_bytes.len() {
-                                            continue 'get_event;
-                                        }
-                                        if search_left {
-                                            pos -= 1;
-                                        } else {
-                                            pos += 1;
+                                        // We start `open_count` at `0`, but we also don't advance past
+                                        // the starting parenthesis. So we will always increment it to
+                                        // `1` at the beginning of the first loop. Then we will continue
+                                        // to increment it when we see parentheses matching the one we
+                                        // started on and decrement it when we see the opposite
+                                        // parentheses. Once `open_count` is back down to `0`, we have
+                                        // found the matching parenthesis.
+                                        let mut open_count: usize = 0;
+                                        loop {
+                                            if string_bytes[pos] == open_paren {
+                                                open_count += 1;
+                                            } else if string_bytes[pos] == close_paren {
+                                                open_count -= 1;
+                                            }
+                                            if open_count == 0 {
+                                                cursor_pos = pos;
+                                                break 'get_event;
+                                            }
+                                            // We hit the end of the string and never found the
+                                            // corresponding parenthesis. Just give up and do nothing.
+                                            if search_left && pos == 0 {
+                                                continue 'get_event;
+                                            } else if !search_left && pos + 1 >= string_bytes.len()
+                                            {
+                                                continue 'get_event;
+                                            }
+                                            if search_left {
+                                                pos -= 1;
+                                            } else {
+                                                pos += 1;
+                                            }
                                         }
                                     }
                                 }
+                                if event.modifiers == KeyModifiers::SHIFT {
+                                    c = c.to_ascii_uppercase();
+                                } else if !event.modifiers.is_empty() {
+                                    // This is a key combination that we don't handle. Just ignore the
+                                    // whole event.
+                                    continue 'get_event;
+                                }
+                                inputs.insert_char_into_current_line(cursor_pos, c);
+                                cursor_pos += 1;
+                                break 'get_event;
                             }
-                            if event.modifiers == KeyModifiers::SHIFT {
-                                c = c.to_ascii_uppercase();
-                            } else if !event.modifiers.is_empty() {
-                                // This is a key combination that we don't handle. Just ignore the
-                                // whole event.
-                                continue 'get_event;
+                            KeyCode::Backspace => {
+                                if cursor_pos == 0 {
+                                    continue 'get_event;
+                                }
+                                cursor_pos -= 1;
+                                inputs.remove_char_from_current_line(cursor_pos);
+                                break 'get_event;
                             }
-                            inputs.insert_char_into_current_line(cursor_pos, c);
-                            cursor_pos += 1;
-                            break 'get_event;
-                        }
-                        KeyCode::Backspace => {
-                            if cursor_pos == 0 {
-                                continue 'get_event;
+                            KeyCode::Delete => {
+                                if cursor_pos >= inputs.current_line().len() {
+                                    continue 'get_event;
+                                }
+                                inputs.remove_char_from_current_line(cursor_pos);
+                                break 'get_event;
                             }
-                            cursor_pos -= 1;
-                            inputs.remove_char_from_current_line(cursor_pos);
-                            break 'get_event;
-                        }
-                        KeyCode::Delete => {
-                            if cursor_pos >= inputs.current_line().len() {
-                                continue 'get_event;
+                            KeyCode::Up => {
+                                if !inputs.try_to_go_to_earlier_line(maybe_db.as_mut())? {
+                                    continue 'get_event;
+                                }
+                                cursor_pos = inputs.current_line().len();
+                                scroll_offset = 0;
+                                break 'get_event;
                             }
-                            inputs.remove_char_from_current_line(cursor_pos);
-                            break 'get_event;
-                        }
-                        KeyCode::Up => {
-                            if !inputs.try_to_go_to_earlier_line(maybe_db.as_mut())? {
-                                continue 'get_event;
+                            KeyCode::Down => {
+                                if !inputs.try_to_go_to_later_line() {
+                                    continue 'get_event;
+                                }
+                                cursor_pos = inputs.current_line().len();
+                                scroll_offset = 0;
+                                break 'get_event;
                             }
-                            cursor_pos = inputs.current_line().len();
-                            scroll_offset = 0;
-                            break 'get_event;
-                        }
-                        KeyCode::Down => {
-                            if !inputs.try_to_go_to_later_line() {
-                                continue 'get_event;
+                            KeyCode::Left => {
+                                let distance: usize = if event.modifiers.is_empty() {
+                                    1
+                                } else if event.modifiers == KeyModifiers::CONTROL
+                                    || event.modifiers == KeyModifiers::SHIFT
+                                {
+                                    LARGE_CURSOR_MOVE_DISTANCE
+                                } else {
+                                    continue 'get_event;
+                                };
+                                if distance >= cursor_pos {
+                                    cursor_pos = 0;
+                                } else {
+                                    cursor_pos -= distance;
+                                }
+                                break 'get_event;
                             }
-                            cursor_pos = inputs.current_line().len();
-                            scroll_offset = 0;
-                            break 'get_event;
-                        }
-                        KeyCode::Left => {
-                            let distance: usize = if event.modifiers.is_empty() {
-                                1
-                            } else if event.modifiers == KeyModifiers::CONTROL
-                                || event.modifiers == KeyModifiers::SHIFT
-                            {
-                                LARGE_CURSOR_MOVE_DISTANCE
-                            } else {
-                                continue 'get_event;
-                            };
-                            if distance >= cursor_pos {
+                            KeyCode::Right => {
+                                let distance: usize = if event.modifiers.is_empty() {
+                                    1
+                                } else if event.modifiers == KeyModifiers::CONTROL
+                                    || event.modifiers == KeyModifiers::SHIFT
+                                {
+                                    LARGE_CURSOR_MOVE_DISTANCE
+                                } else {
+                                    continue 'get_event;
+                                };
+                                let current_input_len = inputs.current_line().len();
+                                if distance >= current_input_len
+                                    || cursor_pos >= current_input_len - distance
+                                {
+                                    cursor_pos = current_input_len;
+                                } else {
+                                    cursor_pos += distance;
+                                }
+                                break 'get_event;
+                            }
+                            KeyCode::Home => {
                                 cursor_pos = 0;
-                            } else {
-                                cursor_pos -= distance;
+                                break 'get_event;
                             }
-                            break 'get_event;
-                        }
-                        KeyCode::Right => {
-                            let distance: usize = if event.modifiers.is_empty() {
-                                1
-                            } else if event.modifiers == KeyModifiers::CONTROL
-                                || event.modifiers == KeyModifiers::SHIFT
-                            {
-                                LARGE_CURSOR_MOVE_DISTANCE
-                            } else {
-                                continue 'get_event;
-                            };
-                            let current_input_len = inputs.current_line().len();
-                            if distance >= current_input_len
-                                || cursor_pos >= current_input_len - distance
-                            {
-                                cursor_pos = current_input_len;
-                            } else {
-                                cursor_pos += distance;
+                            KeyCode::End => {
+                                cursor_pos = inputs.current_line().len();
+                                break 'get_event;
                             }
-                            break 'get_event;
+                            KeyCode::Enter => {
+                                input_complete = true;
+                                break 'get_event;
+                            }
+                            _ => {}
                         }
-                        KeyCode::Home => {
-                            cursor_pos = 0;
-                            break 'get_event;
-                        }
-                        KeyCode::End => {
-                            cursor_pos = inputs.current_line().len();
-                            break 'get_event;
-                        }
-                        KeyCode::Enter => {
-                            input_complete = true;
-                            break 'get_event;
-                        }
-                        _ => {}
-                    },
+                    }
                     Event::Paste(_) => {
                         // I want to implement this, but on my current system, pasting generates
                         // many key events, not a paste event. And I don't really want to implement
